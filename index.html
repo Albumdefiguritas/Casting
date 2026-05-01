@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Álbum de Figuritas</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+:root {
+  --rosa: #ff6b9d;
+  --rosa-light: #ffb6c1;
+  --violeta: #7b2cbf;
+  --violeta-light: #c77dff;
+  --celeste: #4cc9f0;
+  --celeste-light: #caf0f8;
+  --bg: linear-gradient(135deg, #f8f0ff 0%, #fff0f5 50%, #f0f9ff 100%);
+}
+body {
+  font-family: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  background: var(--bg);
+  color: #333;
+  overflow-x: hidden;
+  min-height: 100vh;
+  touch-action: manipulation;
+}
+
+/* ===== APP SHELL ===== */
+.app { display: flex; flex-direction: column; min-height: 100vh; position: relative; }
+
+/* ===== HEADER ===== */
+.header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 14px 20px;
+  background: rgba(255,255,255,0.75);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(123,44,191,0.08);
+  position: sticky; top: 0; z-index: 100;
+}
+.header-left { display: flex; flex-direction: column; }
+.header h1 {
+  font-size: 1.25rem; font-weight: 900; letter-spacing: -0.5px;
+  background: linear-gradient(135deg, var(--violeta), var(--rosa));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.subtitle { font-size: 0.72rem; color: #999; font-weight: 600; margin-top: 2px; letter-spacing: 0.5px; }
+.header-right { display: flex; align-items: center; gap: 12px; }
+
+.progress-box { display: flex; flex-direction: column; align-items: flex-end; min-width: 110px; }
+#progressText { font-size: 0.8rem; font-weight: 800; color: var(--violeta); }
+.progress-bar { width: 110px; height: 5px; background: rgba(0,0,0,0.06); border-radius: 10px; margin-top: 4px; overflow: hidden; }
+.progress-fill { height: 100%; background: linear-gradient(90deg, var(--rosa), var(--violeta), var(--celeste)); background-size: 200% 100%; border-radius: 10px; transition: width 0.6s cubic-bezier(0.4,0,0.2,1); }
+
+.btn-icon {
+  position: relative; background: white; border: none; width: 40px; height: 40px;
+  border-radius: 12px; display: flex; align-items: center; justify-content: center;
+  cursor: pointer; box-shadow: 0 2px 10px rgba(123,44,191,0.1); transition: all 0.2s;
+  color: var(--violeta);
+}
+.btn-icon:hover { transform: scale(1.1) rotate(-4deg); box-shadow: 0 6px 20px rgba(123,44,191,0.18); }
+.btn-icon:active { transform: scale(0.95); }
+.icon-badge {
+  position: absolute; top: -5px; right: -5px; background: var(--rosa); color: white;
+  font-size: 10px; font-weight: 900; min-width: 20px; height: 20px; border-radius: 50%;
+  display: none; align-items: center; justify-content: center; padding: 0 5px;
+  box-shadow: 0 2px 6px rgba(255,107,157,0.4);
+}
+
+/* ===== MAIN / BOOK ===== */
+.main {
+  flex: 1; display: flex; align-items: center; justify-content: center;
+  position: relative; padding: 10px 50px; min-height: 0;
+}
+.book-container {
+  width: 100%; max-width: 520px; height: 58vh;
+  position: relative; filter: drop-shadow(0 25px 50px rgba(123,44,191,0.12));
+}
+.book {
+  width: 100%; height: 100%; position: relative;
+  perspective: 1500px; overflow: hidden; border-radius: 20px;
+}
+
+/* Pages */
+.page {
+  position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+  background: #fff;
+  border-radius: 20px; padding: 28px;
+  display: flex; flex-direction: column;
+  box-shadow:
+    0 20px 60px rgba(0,0,0,0.08),
+    inset 24px 0 40px -24px rgba(0,0,0,0.04);
+  transform-origin: center center;
+  transition: transform 0.85s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.5s ease;
+  opacity: 0; pointer-events: none; overflow: hidden; will-change: transform, opacity;
+}
+.page.active { transform: translateX(0) rotateY(0deg) scale(1); opacity: 1; pointer-events: all; z-index: 10; }
+.page.before { transform: translateX(-135%) rotateY(40deg) scale(0.82); opacity: 0; z-index: 1; }
+.page.after { transform: translateX(135%) rotateY(-40deg) scale(0.82); opacity: 0; z-index: 1; }
+
+/* Cover */
+.page-cover {
+  display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(135deg, rgba(255,107,157,0.12), rgba(123,44,191,0.12), rgba(76,201,240,0.08));
+}
+.page-cover img { max-width: 94%; max-height: 94%; object-fit: contain; border-radius: 18px; box-shadow: 0 20px 60px rgba(0,0,0,0.12); }
+.fallback-cover { font-size: 2rem; font-weight: 900; color: var(--violeta); text-align: center; letter-spacing: 1px; }
+
+/* Content page header */
+.page-header { text-align: center; font-size: 0.85rem; font-weight: 800; color: var(--violeta); margin-bottom: 18px; letter-spacing: 1.5px; text-transform: uppercase; opacity: 0.55; }
+
+/* Slots grid */
+.slots-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; flex: 1; min-height: 0; }
+
+/* Slot */
+.slot {
+  background: rgba(255,255,255,0.55);
+  backdrop-filter: blur(8px);
+  border-radius: 16px; padding: 10px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  border: 2px dashed rgba(123,44,191,0.18);
+  transition: all 0.35s cubic-bezier(0.4,0,0.2,1);
+  position: relative; overflow: hidden;
+}
+.slot.obtained {
+  border-style: solid; border-color: rgba(123,44,191,0.35);
+  background: rgba(255,255,255,0.95);
+  box-shadow: 0 8px 24px rgba(123,44,191,0.1);
+}
+.slot.obtained:hover { transform: translateY(-4px) scale(1.03); box-shadow: 0 14px 36px rgba(123,44,191,0.16); z-index: 2; }
+.slot.highlight { animation: slotGlow 1s ease; }
+@keyframes slotGlow {
+  0% { transform: scale(1); }
+  35% { transform: scale(1.1); box-shadow: 0 0 30px rgba(255,107,157,0.5), 0 0 60px rgba(123,44,191,0.2); border-color: var(--rosa); }
+  60% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+.slot .placeholder { flex: 1; width: 100%; display: flex; align-items: center; justify-content: center; color: rgba(123,44,191,0.2); transition: transform 0.3s; }
+.slot:hover .placeholder { transform: scale(1.1); }
+.slot img { width: 100%; height: 100%; object-fit: contain; border-radius: 12px; display: block; pointer-events: none; }
+.slot .num { font-size: 11px; font-weight: 900; color: var(--violeta); margin-top: 8px; background: rgba(123,44,191,0.08); padding: 3px 12px; border-radius: 20px; letter-spacing: 0.5px; }
+.slot .fallback { position: absolute; inset: 0; display: none; align-items: center; justify-content: center; font-size: 1.6rem; font-weight: 900; color: var(--violeta); }
+
+/* Nav arrows */
+.nav-arrow {
+  position: absolute; top: 50%; transform: translateY(-50%);
+  background: white; border: none; width: 46px; height: 46px;
+  border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  font-size: 1.6rem; color: var(--violeta); cursor: pointer;
+  box-shadow: 0 4px 20px rgba(123,44,191,0.12); z-index: 50;
+  transition: all 0.25s cubic-bezier(0.4,0,0.2,1);
+}
+.nav-arrow:hover { background: var(--violeta); color: white; transform: translateY(-50%) scale(1.12); box-shadow: 0 8px 30px rgba(123,44,191,0.25); }
+.nav-arrow:active { transform: translateY(-50%) scale(0.95); }
+.nav-prev { left: 0; }
+.nav-next { right: 0; }
+
+/* ===== BOTTOM BAR ===== */
+.bottom-bar {
+  display: flex; flex-direction: column; align-items: center; gap: 12px;
+  padding: 10px 20px 28px;
+}
+.page-info { font-size: 0.8rem; color: #aaa; font-weight: 700; letter-spacing: 1px; }
+
+/* Buy Button */
+.btn-buy {
+  display: flex; align-items: center; gap: 10px;
+  background: linear-gradient(135deg, var(--rosa), var(--violeta), var(--celeste));
+  background-size: 250% 250%;
+  animation: gradientShift 5s ease infinite;
+  color: white; border: none;
+  padding: 16px 44px; font-size: 1.05rem; font-weight: 900;
+  border-radius: 50px; cursor: pointer;
+  box-shadow: 0 12px 40px rgba(123,44,191,0.3);
+  transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
+  letter-spacing: 0.5px; text-transform: uppercase;
+}
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+.btn-buy:hover { transform: translateY(-3px) scale(1.03); box-shadow: 0 18px 50px rgba(123,44,191,0.4); }
+.btn-buy:active { transform: translateY(0) scale(0.97); }
+.btn-buy-icon { font-size: 1.3rem; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2)); }
+
+/* ===== REPEATS PANEL ===== */
+.repeats-panel {
+  position: fixed; top: 0; right: 0; width: 340px; height: 100%;
+  background: rgba(255,255,255,0.96);
+  backdrop-filter: blur(24px);
+  box-shadow: -15px 0 50px rgba(0,0,0,0.1);
+  transform: translateX(110%);
+  transition: transform 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 600; display: flex; flex-direction: column;
+}
+.repeats-panel.open { transform: translateX(0); }
+.repeats-header { display: flex; justify-content: space-between; align-items: center; padding: 22px 24px; border-bottom: 1px solid rgba(0,0,0,0.06); }
+.repeats-header h2 { font-size: 1.15rem; color: var(--violeta); font-weight: 800; }
+.btn-close { background: none; border: none; font-size: 1.8rem; color: #bbb; cursor: pointer; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border-radius: 50%; transition: all 0.2s; line-height: 1; }
+.btn-close:hover { background: rgba(0,0,0,0.05); color: #555; }
+.repeats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; padding: 20px; overflow-y: auto; flex: 1; }
+.repeat-item { position: relative; background: white; border-radius: 14px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.06); transition: all 0.25s; cursor: pointer; }
+.repeat-item:hover { transform: translateY(-4px) scale(1.03); box-shadow: 0 8px 24px rgba(0,0,0,0.1); }
+.repeat-item img { width: 100%; aspect-ratio: 3/4; object-fit: cover; display: block; pointer-events: none; }
+.repeat-badge { position: absolute; top: 8px; right: 8px; background: var(--rosa); color: white; font-size: 11px; font-weight: 900; min-width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; padding: 0 6px; box-shadow: 0 2px 8px rgba(255,107,157,0.4); }
+.repeat-num { display: block; text-align: center; font-size: 11px; font-weight: 800; color: var(--violeta); padding: 6px 4px; }
+.repeats-empty { grid-column: 1 / -1; text-align: center; color: #bbb; font-size: 0.9rem; padding: 60px 0; font-weight: 600; }
+
+/* ===== ENVELOPE OVERLAY ===== */
+.overlay {
+  position: fixed; inset: 0;
+  background: rgba(12, 5, 35, 0.78);
+  backdrop-filter: blur(20px);
+  z-index: 1000;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 36px;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.45s ease;
+}
+.overlay.active { opacity: 1; pointer-events: all; }
+
+/* Envelope */
+.envelope-wrapper { position: relative; width: 300px; height: 190px; animation: envelopeFloat 3.5s ease-in-out infinite; }
+@keyframes envelopeFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-12px); } }
+.envelope { position: relative; width: 100%; height: 100%; transform: scale(0); transition: transform 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) 0.15s; }
+.overlay.active .envelope { transform: scale(1); }
+.envelope.open { animation: none; }
+
+.envelope-back { position: absolute; inset: 0; background: #ece4f7; border-radius: 18px; }
+.envelope-front { position: absolute; bottom: 0; left: 0; width: 100%; height: 72%; background: #ddd0f5; border-radius: 0 0 18px 18px; overflow: hidden; }
+.envelope-front::before {
+  content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+  background: repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255,255,255,0.2) 10px, rgba(255,255,255,0.2) 20px);
+  opacity: 0.4;
+}
+.envelope-flap {
+  position: absolute; top: 0; left: 0; width: 100%; height: 58%;
+  background: #d0c0ec; border-radius: 18px 18px 0 0;
+  transform-origin: top;
+  transition: transform 0.55s cubic-bezier(0.4, 0, 0.2, 1);
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+  z-index: 5;
+}
+.envelope.open .envelope-flap { transform: rotateX(180deg); }
+.envelope-seal {
+  position: absolute; top: 48%; left: 50%; transform: translate(-50%, -50%);
+  width: 50px; height: 50px;
+  background: linear-gradient(135deg, var(--rosa), var(--violeta));
+  border-radius: 50%; box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+  z-index: 6; display: flex; align-items: center; justify-content: center;
+  color: white; font-weight: 900; font-size: 20px;
+  border: 4px solid #ece4f7;
+}
+
+/* Cards Fan */
+.cards-fan {
+  position: absolute; top: -70px; left: 50%; transform: translateX(-50%);
+  width: 420px; height: 150px; z-index: 25;
+  display: flex; justify-content: center; align-items: flex-end;
+  pointer-events: none;
+}
+.pack-card {
+  position: absolute; width: 86px; height: 118px;
+  --tx: 0px; --rot: 0deg; --ty: 45px; --op: 0;
+  transform: translateX(var(--tx)) rotate(var(--rot)) translateY(var(--ty));
+  opacity: var(--op);
+  transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.pack-card:nth-child(1) { --tx: -100px; --rot: -14deg; transition-delay: 0.08s; }
+.pack-card:nth-child(2) { --tx: -50px; --rot: -7deg; transition-delay: 0.18s; }
+.pack-card:nth-child(3) { --tx: 0px; --rot: 0deg; transition-delay: 0.28s; }
+.pack-card:nth-child(4) { --tx: 50px; --rot: 7deg; transition-delay: 0.38s; }
+.pack-card:nth-child(5) { --tx: 100px; --rot: 14deg; transition-delay: 0.48s; }
+
+.cards-fan.revealed .pack-card { --ty: 0px; --op: 1; }
+
+.pack-card-inner {
+  width: 100%; height: 100%; position: relative;
+  transform-style: preserve-3d;
+  transition: transform 0.65s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.pack-card.flipped .pack-card-inner { transform: rotateY(180deg); }
+.card-face { position: absolute; inset: 0; backface-visibility: hidden; border-radius: 14px; overflow: hidden; box-shadow: 0 8px 28px rgba(0,0,0,0.18); }
+.card-back {
+  background: linear-gradient(135deg, var(--rosa), var(--violeta));
+  display: flex; align-items: center; justify-content: center;
+  color: white; font-size: 32px; font-weight: 900;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+.card-front { transform: rotateY(180deg); background: white; }
+.card-front img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+/* Save button */
+.btn-save {
+  background: white; color: var(--violeta); border: none;
+  padding: 16px 44px; font-size: 1.05rem; font-weight: 900;
+  border-radius: 50px; cursor: pointer;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.2);
+  transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  opacity: 0; transform: scale(0.7); pointer-events: none; letter-spacing: 0.5px;
+}
+.btn-save.show { opacity: 1; transform: scale(1); pointer-events: all; }
+.btn-save.show:hover { transform: scale(1.06); color: var(--rosa); box-shadow: 0 16px 50px rgba(0,0,0,0.3); }
+.btn-save:active { transform: scale(0.95); }
+
+/* Flying card */
+.flying-card { position: fixed; border-radius: 14px; overflow: hidden; background: white; box-shadow: 0 12px 50px rgba(0,0,0,0.25); pointer-events: none; z-index: 9999; transition: all 0.75s cubic-bezier(0.4, 0, 0.2, 1); }
+.flying-card img { width: 100%; height: 100%; object-fit: cover; border-radius: 14px; display: block; }
+
+/* ===== TOAST ===== */
+.toast-container { position: fixed; top: 90px; left: 50%; transform: translateX(-50%); z-index: 2000; display: flex; flex-direction: column; gap: 10px; pointer-events: none; width: max-content; max-width: 90vw; }
+.toast {
+  background: white; color: var(--violeta); padding: 14px 28px;
+  border-radius: 50px; font-size: 0.9rem; font-weight: 800;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.12);
+  opacity: 0; transform: translateY(-15px) scale(0.92);
+  transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  text-align: center;
+}
+.toast.show { opacity: 1; transform: translateY(0) scale(1); }
+.toast.success { background: linear-gradient(135deg, #e8f5e9, #c8e6c9); color: #2e7d32; }
+.toast.repeat { background: linear-gradient(135deg, #fff8e1, #ffecb3); color: #ef6c00; }
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 640px) {
+  .main { padding: 8px 42px; }
+  .book-container { max-width: 100%; height: 52vh; }
+  .header h1 { font-size: 1.05rem; }
+  .nav-arrow { width: 36px; height: 36px; font-size: 1.3rem; }
+  .nav-prev { left: 2px; }
+  .nav-next { right: 2px; }
+  .slots-grid { gap: 10px; }
+  .slot { padding: 6px; border-radius: 12px; }
+  .page { padding: 18px; }
+  .repeats-panel { width: 100%; height: 42vh; top: auto; bottom: 0; transform: translateY(110%); border-radius: 24px 24px 0 0; }
+  .repeats-panel.open { transform: translateY(0); }
+  .repeats-grid { grid-template-columns: repeat(4, 1fr); gap: 10px; padding: 16px; }
+  .envelope-wrapper { transform: scale(0.85); }
+  .cards-fan { width: 340px; }
+  .pack-card { width: 70px; height: 96px; }
+  .pack-card:nth-child(1) { --tx: -80px; --rot: -12deg; }
+  .pack-card:nth-child(2) { --tx: -40px; --rot: -6deg; }
+  .pack-card:nth-child(4) { --tx: 40px; --rot: 6deg; }
+  .pack-card:nth-child(5) { --tx: 80px; --rot: 12deg; }
+  .btn-buy { padding: 14px 32px; font-size: 0.95rem; }
+}
+@media (min-width: 1024px) {
+  .book-container { max-width: 600px; height: 72vh; }
+  .nav-prev { left: calc(50% - 380px); }
+  .nav-next { right: calc(50% - 380px); }
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <header class="header">
+    <div class="header-left">
+      <h1>Álbum de Figuritas</h1>
+      <span class="subtitle">Colecciona las 98</span>
+    </div>
+    <div class="header-right">
+      <div class="progress-box">
+        <span id="progressText">0/98 (0%)</span>
+        <div class="progress-bar"><div id="progressFill" class="progress-fill" style="width:0%"></div></div>
+      </div>
+      <button class="btn-icon" id="btnReset" title="Reiniciar álbum">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+      </button>
+      <button class="btn-icon" id="btnRepeats" title="Ver repetidas">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        <span class="icon-badge" id="repeatBadge">0</span>
+      </button>
+    </div>
+  </header>
+
+  <div class="main">
+    <button class="nav-arrow nav-prev" id="btnPrev" aria-label="Página anterior">‹</button>
+    <div class="book-container">
+      <div class="book" id="book"></div>
+    </div>
+    <button class="nav-arrow nav-next" id="btnNext" aria-label="Página siguiente">›</button>
+  </div>
+
+  <div class="bottom-bar">
+    <div class="page-info" id="pageIndicator">1 / 14</div>
+    <button class="btn-buy" id="btnBuy">
+      <span class="btn-buy-icon">🎁</span>
+      <span class="btn-buy-text">Comprar Sobre</span>
+    </button>
+  </div>
+
+  <aside class="repeats-panel" id="repeatsPanel">
+    <div class="repeats-header">
+      <h2>Repetidas</h2>
+      <button class="btn-close" id="btnCloseRepeats">×</button>
+    </div>
+    <div class="repeats-grid" id="repeatsGrid">
+      <div class="repeats-empty">Aún no tienes figuritas repetidas</div>
+    </div>
+  </aside>
+
+  <div class="overlay" id="envelopeOverlay">
+    <div class="overlay-content">
+      <div class="envelope-wrapper">
+        <div class="envelope" id="envelope">
+          <div class="envelope-back"></div>
+          <div class="envelope-flap"></div>
+          <div class="envelope-front"></div>
+          <div class="envelope-seal">✦</div>
+        </div>
+        <div class="cards-fan" id="cardsFan"></div>
+      </div>
+      <button class="btn-save" id="btnSave">Guardar en Álbum</button>
+    </div>
+  </div>
+
+  <div class="toast-container" id="toastContainer"></div>
+</div>
+
+<script>
+(function() {
+  const TOTAL = 98;
+  const PER_PAGE = 8;
+  const TOTAL_PAGES = 1 + Math.ceil(TOTAL / PER_PAGE);
+
+  let state = { album: new Set(), repeats: {}, currentPage: 0, packsOpened: 0 };
+  let currentPack = [];
+  let isProcessing = false;
+
+  const els = {
+    book: document.getElementById('book'),
+    prev: document.getElementById('btnPrev'),
+    next: document.getElementById('btnNext'),
+    buy: document.getElementById('btnBuy'),
+    save: document.getElementById('btnSave'),
+    overlay: document.getElementById('envelopeOverlay'),
+    envelope: document.getElementById('envelope'),
+    cardsFan: document.getElementById('cardsFan'),
+    pageIndicator: document.getElementById('pageIndicator'),
+    progressText: document.getElementById('progressText'),
+    progressFill: document.getElementById('progressFill'),
+    repeatsPanel: document.getElementById('repeatsPanel'),
+    repeatsGrid: document.getElementById('repeatsGrid'),
+    btnRepeats: document.getElementById('btnRepeats'),
+    btnCloseRepeats: document.getElementById('btnCloseRepeats'),
+    toastContainer: document.getElementById('toastContainer'),
+    repeatBadge: document.getElementById('repeatBadge'),
+    btnReset: document.getElementById('btnReset')
+  };
+
+  const wait = ms => new Promise(r => setTimeout(r, ms));
+
+  function loadState() {
+    try {
+      const raw = localStorage.getItem('albumFiguritas_v1');
+      if (!raw) return;
+      const data = JSON.parse(raw);
+      state.album = new Set(data.album || []);
+      state.repeats = data.repeats || {};
+      state.currentPage = data.currentPage || 0;
+      state.packsOpened = data.packsOpened || 0;
+    } catch(e) {}
+  }
+
+  function saveState() {
+    try {
+      const data = { album: Array.from(state.album), repeats: state.repeats, currentPage: state.currentPage, packsOpened: state.packsOpened, version: 1 };
+      localStorage.setItem('albumFiguritas_v1', JSON.stringify(data));
+    } catch(e) {}
+  }
+
+  function getPageIndex(num) { return Math.ceil(num / PER_PAGE); }
+
+  function renderBook() {
+    els.book.innerHTML = '';
+
+    const cover = document.createElement('div');
+    cover.className = 'page page-cover';
+    cover.innerHTML = `
+      <img src="portada.png" alt="Portada" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+      <div class="fallback-cover" style="display:none">Álbum de Figuritas<br><span style="font-size:1rem;opacity:.6">Colecciona las 98</span></div>
+    `;
+    els.book.appendChild(cover);
+
+    for (let p = 0; p < TOTAL_PAGES - 1; p++) {
+      const start = p * PER_PAGE + 1;
+      const end = Math.min(start + PER_PAGE - 1, TOTAL);
+      const page = document.createElement('div');
+      page.className = 'page page-content';
+      page.dataset.page = String(p + 1);
+
+      const header = document.createElement('div');
+      header.className = 'page-header';
+      header.textContent = `Página ${p + 1} · ${start}–${end}`;
+
+      const grid = document.createElement('div');
+      grid.className = 'slots-grid';
+
+      for (let i = start; i <= end; i++) {
+        const obtained = state.album.has(i);
+        const slot = document.createElement('div');
+        slot.className = `slot ${obtained ? 'obtained' : 'empty'}`;
+        slot.dataset.slot = i;
+
+        if (obtained) {
+          slot.innerHTML = `
+            <div style="width:100%;height:100%;position:relative;">
+              <img src="P${String(i).padStart(2,'0')}.png" alt="" loading="lazy" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+              <div class="fallback" style="display:none">${i}</div>
+            </div>
+            <span class="num">#${i}</span>
+          `;
+        } else {
+          slot.innerHTML = `
+            <div class="placeholder">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M12 8v8m-4-4h8"/></svg>
+            </div>
+            <span class="num">#${i}</span>
+          `;
+        }
+        grid.appendChild(slot);
+      }
+
+      page.appendChild(header);
+      page.appendChild(grid);
+      els.book.appendChild(page);
+    }
+
+    updatePageClasses();
+  }
+
+  function updatePageClasses() {
+    document.querySelectorAll('.page').forEach((page, idx) => {
+      page.classList.remove('active', 'before', 'after');
+      if (idx < state.currentPage) page.classList.add('before');
+      else if (idx > state.currentPage) page.classList.add('after');
+      else page.classList.add('active');
+    });
+  }
+
+  function updatePageIndicator() {
+    els.pageIndicator.textContent = `${state.currentPage + 1} / ${TOTAL_PAGES}`;
+  }
+
+  function updateStats() {
+    const obtained = state.album.size;
+    const percent = Math.round((obtained / TOTAL) * 100);
+    els.progressText.textContent = `${obtained}/${TOTAL} (${percent}%)`;
+    els.progressFill.style.width = `${percent}%`;
+    updatePageIndicator();
+    updateRepeatBadge();
+  }
+
+  function updateRepeatBadge() {
+    const total = Object.values(state.repeats).reduce((a, b) => a + b, 0);
+    els.repeatBadge.textContent = total;
+    els.repeatBadge.style.display = total > 0 ? 'flex' : 'none';
+  }
+
+  function renderRepeats() {
+    els.repeatsGrid.innerHTML = '';
+    const nums = Object.keys(state.repeats).map(Number).sort((a, b) => a - b);
+    if (nums.length === 0) {
+      els.repeatsGrid.innerHTML = '<div class="repeats-empty">Aún no tienes figuritas repetidas</div>';
+      return;
+    }
+    nums.forEach(num => {
+      const count = state.repeats[num];
+      const item = document.createElement('div');
+      item.className = 'repeat-item';
+      item.innerHTML = `
+        <img src="P${String(num).padStart(2,'0')}.png" alt="" loading="lazy" onerror="this.style.opacity='0.3'">
+        <span class="repeat-badge">${count}</span>
+        <span class="repeat-num">#${num}</span>
+      `;
+      els.repeatsGrid.appendChild(item);
+    });
+  }
+
+  function goPrev() {
+    if (state.currentPage > 0) { state.currentPage--; updatePageClasses(); updatePageIndicator(); saveState(); }
+  }
+  function goNext() {
+    if (state.currentPage < TOTAL_PAGES - 1) { state.currentPage++; updatePageClasses(); updatePageIndicator(); saveState(); }
+  }
+
+  function generatePack() {
+    const nums = [];
+    while (nums.length < 5) {
+      const n = Math.floor(Math.random() * TOTAL) + 1;
+      if (!nums.includes(n)) nums.push(n);
+    }
+    return nums;
+  }
+
+  async function openPack() {
+    if (isProcessing || els.overlay.classList.contains('active')) return;
+    isProcessing = true;
+
+    currentPack = generatePack();
+
+    els.envelope.classList.remove('open');
+    els.cardsFan.classList.remove('revealed');
+    els.cardsFan.innerHTML = '';
+    els.save.classList.remove('show');
+
+    currentPack.forEach((num, i) => {
+      const card = document.createElement('div');
+      card.className = 'pack-card';
+      card.dataset.num = num;
+      card.innerHTML = `
+        <div class="pack-card-inner">
+          <div class="card-face card-back">?</div>
+          <div class="card-face card-front">
+            <img src="P${String(num).padStart(2,'0')}.png" alt="" onerror="this.style.display='none'; this.parentElement.style.background='linear-gradient(135deg,var(--rosa),var(--violeta))'; this.parentElement.innerHTML='<div style=display:flex;align-items:center;justify-content:center;height:100%;color:white;font-size:1.8rem;font-weight:900>${num}</div>'">
+          </div>
+        </div>
+      `;
+      els.cardsFan.appendChild(card);
+    });
+
+    els.overlay.classList.add('active');
+    await wait(800);
+
+    els.envelope.classList.add('open');
+    await wait(550);
+
+    els.cardsFan.classList.add('revealed');
+    await wait(700);
+
+    const cards = els.cardsFan.querySelectorAll('.pack-card');
+    for (let i = 0; i < cards.length; i++) {
+      await wait(220);
+      cards[i].classList.add('flipped');
+    }
+    await wait(350);
+
+    els.save.classList.add('show');
+    isProcessing = false;
+  }
+
+  async function savePack() {
+    if (isProcessing) return;
+    isProcessing = true;
+    els.save.classList.remove('show');
+
+    const pack = currentPack;
+    const cards = els.cardsFan.querySelectorAll('.pack-card');
+
+    const results = pack.map(num => {
+      if (state.album.has(num)) {
+        state.repeats[num] = (state.repeats[num] || 0) + 1;
+        return 'repeat';
+      } else {
+        state.album.add(num);
+        return 'new';
+      }
+    });
+
+    state.packsOpened++;
+    saveState();
+
+    cards.forEach((card, i) => {
+      setTimeout(() => {
+        const num = pack[i];
+        const pageIdx = getPageIndex(num);
+        const slot = document.querySelector(`.page[data-page="${pageIdx}"] [data-slot="${num}"]`);
+        const pageEl = slot?.closest('.page');
+        const isActive = pageEl?.classList.contains('active');
+
+        const startRect = card.getBoundingClientRect();
+        if (isActive && slot) {
+          flyCard(num, startRect, slot);
+        } else {
+          const bookRect = els.book.getBoundingClientRect();
+          flyCard(num, startRect, null, {
+            left: bookRect.left + bookRect.width / 2 - 22,
+            top: bookRect.top + bookRect.height / 2 - 30,
+            width: 44, height: 44
+          });
+        }
+      }, i * 130);
+    });
+
+    await wait(pack.length * 130 + 900);
+
+    els.overlay.classList.remove('active');
+    els.envelope.classList.remove('open');
+    els.cardsFan.classList.remove('revealed');
+
+    const oldPage = state.currentPage;
+    renderBook();
+    state.currentPage = oldPage;
+    updatePageClasses();
+    updateStats();
+    renderRepeats();
+
+    const newCount = results.filter(r => r === 'new').length;
+    const repeatCount = results.filter(r => r === 'repeat').length;
+    if (newCount > 0) showToast(`¡${newCount} nuevas figuritas guardadas!`, 'success');
+    if (repeatCount > 0) showToast(`${repeatCount} repetidas añadidas al panel`, 'repeat');
+
+    if (state.album.size === TOTAL) {
+      setTimeout(() => {
+        showToast('🎉 ¡Álbum completado! Felicitaciones 🎉', 'success');
+        launchConfetti();
+      }, 600);
+    }
+
+    isProcessing = false;
+  }
+
+  function flyCard(num, startRect, targetEl, fallbackRect) {
+    const clone = document.createElement('div');
+    clone.className = 'flying-card';
+    clone.innerHTML = `<img src="P${String(num).padStart(2,'0')}.png" alt="">`;
+    clone.style.left = startRect.left + 'px';
+    clone.style.top = startRect.top + 'px';
+    clone.style.width = startRect.width + 'px';
+    clone.style.height = startRect.height + 'px';
+    document.body.appendChild(clone);
+
+    let target;
+    if (targetEl) {
+      const rect = targetEl.getBoundingClientRect();
+      target = { left: rect.left, top: rect.top, width: rect.width, height: rect.height };
+    } else if (fallbackRect) {
+      target = fallbackRect;
+    } else {
+      target = { left: window.innerWidth / 2 - 20, top: 120, width: 40, height: 40 };
+    }
+
+    requestAnimationFrame(() => {
+      clone.style.left = target.left + 'px';
+      clone.style.top = target.top + 'px';
+      clone.style.width = target.width + 'px';
+      clone.style.height = target.height + 'px';
+      clone.style.opacity = '0.5';
+    });
+
+    setTimeout(() => {
+      clone.style.opacity = '0';
+      setTimeout(() => clone.remove(), 200);
+      if (targetEl) {
+        targetEl.classList.add('highlight');
+        setTimeout(() => targetEl.classList.remove('highlight'), 1100);
+      }
+    }, 750);
+  }
+
+  function showToast(msg, type) {
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    toast.textContent = msg;
+    els.toastContainer.appendChild(toast);
+    requestAnimationFrame(() => toast.classList.add('show'));
+    setTimeout(() => {
+      toast.classList.remove('show');
+      setTimeout(() => toast.remove(), 400);
+    }, 3000);
+  }
+
+  function launchConfetti() {
+    const canvas = document.createElement('canvas');
+    canvas.style.position = 'fixed';
+    canvas.style.inset = '0';
+    canvas.style.zIndex = '9999';
+    canvas.style.pointerEvents = 'none';
+    document.body.appendChild(canvas);
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width = window.innerWidth;
+    const H = canvas.height = window.innerHeight;
+
+    const colors = ['#ff6b9d', '#7b2cbf', '#4cc9f0', '#ffd700', '#ffffff', '#ffb7c5', '#e0aaff'];
+    const particles = [];
+    for (let i = 0; i < 300; i++) {
+      particles.push({
+        x: W / 2, y: H / 2,
+        vx: (Math.random() - 0.5) * 28,
+        vy: (Math.random() - 0.5) * 28 - 6,
+        color: colors[Math.floor(Math.random() * colors.length)],
+        size: Math.random() * 10 + 3,
+        life: 1,
+        decay: 0.004 + Math.random() * 0.008,
+        gravity: 0.15 + Math.random() * 0.2,
+        rot: Math.random() * 360,
+        rotSpeed: (Math.random() - 0.5) * 12
+      });
+    }
+
+    function animate() {
+      ctx.clearRect(0, 0, W, H);
+      let alive = 0;
+      particles.forEach(p => {
+        if (p.life <= 0) return;
+        alive++;
+        p.x += p.vx; p.y += p.vy;
+        p.vy += p.gravity; p.vx *= 0.995;
+        p.life -= p.decay; p.size *= 0.994;
+        p.rot += p.rotSpeed;
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.rot * Math.PI / 180);
+        ctx.globalAlpha = p.life;
+        ctx.fillStyle = p.color;
+        ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
+        ctx.restore();
+      });
+      if (alive) requestAnimationFrame(animate); else canvas.remove();
+    }
+    animate();
+  }
+
+  /* Bind events */
+  els.prev.addEventListener('click', goPrev);
+  els.next.addEventListener('click', goNext);
+  els.buy.addEventListener('click', openPack);
+  els.save.addEventListener('click', savePack);
+  els.btnRepeats.addEventListener('click', () => els.repeatsPanel.classList.add('open'));
+  els.btnCloseRepeats.addEventListener('click', () => els.repeatsPanel.classList.remove('open'));
+
+  els.btnReset.addEventListener('click', () => {
+    if (confirm('¿Seguro que querés reiniciar todo el progreso? Esta acción no se puede deshacer.')) {
+      localStorage.removeItem('albumFiguritas_v1');
+      state.album = new Set(); state.repeats = {}; state.currentPage = 0; state.packsOpened = 0;
+      renderBook(); updateStats(); renderRepeats();
+      showToast('Álbum reiniciado', 'info');
+    }
+  });
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight') goNext();
+    if (e.key === 'ArrowLeft') goPrev();
+    if ((e.key === ' ' || e.key === 'Enter') && !els.overlay.classList.contains('active')) {
+      e.preventDefault(); openPack();
+    }
+    if (e.key === 'Escape') {
+      els.repeatsPanel.classList.remove('open');
+      if (els.overlay.classList.contains('active')) els.overlay.classList.remove('active');
+    }
+  });
+
+  /* Start */
+  loadState();
+  renderBook();
+  updateStats();
+  renderRepeats();
+
+})();
+</script>
+
+</body>
+</html>
