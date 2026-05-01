@@ -547,7 +547,7 @@ body::after {
         if (obtained) {
           slot.innerHTML = `
             <div style="width:100%;height:100%;position:relative;">
-              <img src="P${String(i).padStart(2,'0')}.jpg" alt="" loading="lazy" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+              <img src="p${String(i).padStart(2,'0')}.jpg" alt="" loading="lazy" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
               <div class="fallback" style="display:none">${i}</div>
             </div>
             <span class="num">#${i}</span>
@@ -611,7 +611,7 @@ body::after {
       const item = document.createElement('div');
       item.className = 'repeat-item';
       item.innerHTML = `
-        <img src="P${String(num).padStart(2,'0')}.jpg" alt="" loading="lazy" onerror="this.style.opacity='0.3'">
+        <img src="p${String(num).padStart(2,'0')}.jpg" alt="" loading="lazy" onerror="this.style.opacity='0.3'">
         <span class="repeat-badge">${count}</span>
         <span class="repeat-num">#${num}</span>
       `;
@@ -654,7 +654,7 @@ body::after {
         <div class="pack-card-inner">
           <div class="card-face card-back">?</div>
           <div class="card-face card-front">
-            <img src="P${String(num).padStart(2,'0')}.jpg" alt="" onerror="this.style.display='none'; this.parentElement.style.background='linear-gradient(135deg,#ff7b00,#f1c40f)'; this.parentElement.innerHTML='<div style=display:flex;align-items:center;justify-content:center;height:100%;color:#0f0f0f;font-size:1.8rem;font-weight:900>${num}</div>'">
+            <img src="p${String(num).padStart(2,'0')}.jpg" alt="" onerror="this.style.display='none'; this.parentElement.style.background='linear-gradient(135deg,#ff7b00,#f1c40f)'; this.parentElement.innerHTML='<div style=display:flex;align-items:center;justify-content:center;height:100%;color:#0f0f0f;font-size:1.8rem;font-weight:900>${num}</div>'">
           </div>
         </div>
       `;
@@ -755,7 +755,7 @@ body::after {
   function flyCard(num, startRect, targetEl, fallbackRect) {
     const clone = document.createElement('div');
     clone.className = 'flying-card';
-    clone.innerHTML = `<img src="P${String(num).padStart(2,'0')}.jpg" alt="">`;
+    clone.innerHTML = `<img src="p${String(num).padStart(2,'0')}.jpg" alt="">`;
     clone.style.left = startRect.left + 'px';
     clone.style.top = startRect.top + 'px';
     clone.style.width = startRect.width + 'px';
