@@ -143,17 +143,20 @@ body::after {
 }
 
 /* Slots grid */
-.slots-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; flex: 1; min-height: 0; }
+.slots-grid { display: grid; grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(2, auto); gap: 14px; flex: 1; min-height: 0; place-items: center; align-content: center; }
 
 /* Slot - estilo cromo */
 .slot {
   background: rgba(255,255,255,0.6);
   backdrop-filter: blur(6px);
-  border-radius: 6px; padding: 8px;
+  border-radius: 6px; padding: 6px;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   border: 2px dashed rgba(255,123,0,0.25);
   transition: all 0.35s cubic-bezier(0.4,0,0.2,1);
   position: relative; overflow: hidden;
+  aspect-ratio: 149 / 212;
+  width: 100%;
+  max-height: 100%;
 }
 .slot.obtained {
   border-style: solid; border-color: var(--naranja);
@@ -168,9 +171,9 @@ body::after {
   60% { transform: scale(1.05); }
   100% { transform: scale(1); }
 }
-.slot .placeholder { flex: 1; width: 100%; display: flex; align-items: center; justify-content: center; color: rgba(255,123,0,0.15); transition: transform 0.3s; }
+.slot .placeholder { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; color: rgba(255,123,0,0.15); transition: transform 0.3s; }
 .slot:hover .placeholder { transform: scale(1.1); }
-.slot img { width: 100%; height: 100%; object-fit: contain; border-radius: 3px; display: block; pointer-events: none; aspect-ratio: 149 / 212; }
+.slot img { width: 100%; height: 100%; object-fit: cover; border-radius: 3px; display: block; pointer-events: none; }
 .slot .num {
   font-size: 12px; font-weight: 900; color: #fff;
   margin-top: 6px; background: var(--naranja);
@@ -289,13 +292,13 @@ body::after {
 
 /* Cards Fan */
 .cards-fan {
-  position: absolute; top: -70px; left: 50%; transform: translateX(-50%);
-  width: 420px; height: 150px; z-index: 25;
+  position: absolute; top: -80px; left: 50%; transform: translateX(-50%);
+  width: 440px; height: 160px; z-index: 25;
   display: flex; justify-content: center; align-items: flex-end;
   pointer-events: none;
 }
 .pack-card {
-  position: absolute; width: 78px; height: 111px;
+  position: absolute; width: 82px; height: 117px;
   --tx: 0px; --rot: 0deg; --ty: 45px; --op: 0;
   transform: translateX(var(--tx)) rotate(var(--rot)) translateY(var(--ty));
   opacity: var(--op);
@@ -366,19 +369,19 @@ body::after {
   .nav-arrow { width: 38px; height: 38px; font-size: 1.4rem; }
   .nav-prev { left: 2px; }
   .nav-next { right: 2px; }
-  .slots-grid { gap: 10px; }
-  .slot { padding: 6px; border-radius: 4px; }
+  .slots-grid { gap: 10px; grid-template-columns: repeat(4, 1fr); }
+  .slot { padding: 5px; border-radius: 4px; }
   .page { padding: 16px; }
   .repeats-panel { width: 100%; height: 42vh; top: auto; bottom: 0; transform: translateY(110%); border-radius: 16px 16px 0 0; }
   .repeats-panel.open { transform: translateY(0); }
   .repeats-grid { grid-template-columns: repeat(4, 1fr); gap: 10px; padding: 16px; }
   .envelope-wrapper { transform: scale(0.85); }
-  .cards-fan { width: 340px; }
-  .pack-card { width: 70px; height: 96px; }
-  .pack-card:nth-child(1) { --tx: -80px; --rot: -12deg; }
-  .pack-card:nth-child(2) { --tx: -40px; --rot: -6deg; }
-  .pack-card:nth-child(4) { --tx: 40px; --rot: 6deg; }
-  .pack-card:nth-child(5) { --tx: 80px; --rot: 12deg; }
+  .cards-fan { width: 360px; }
+  .pack-card { width: 64px; height: 91px; }
+  .pack-card:nth-child(1) { --tx: -90px; --rot: -12deg; }
+  .pack-card:nth-child(2) { --tx: -45px; --rot: -6deg; }
+  .pack-card:nth-child(4) { --tx: 45px; --rot: 6deg; }
+  .pack-card:nth-child(5) { --tx: 90px; --rot: 12deg; }
   .btn-buy { padding: 14px 32px; font-size: 0.95rem; }
 }
 @media (min-width: 1024px) {
@@ -387,6 +390,7 @@ body::after {
   .nav-next { right: calc(50% - 380px); }
 }
 </style>
+<base target="_blank">
 </head>
 <body>
 
